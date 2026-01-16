@@ -15,11 +15,11 @@ func RegisterUserController() gin.HandlerFunc {
 		res, err := userservices.UserRegisterService(usermiddleware.User)
 		if err != nil {
 			c.JSON(400, gin.H{
-				"error": err.Error(),
+				"message": "Error on Service" + err.Error(),
 			})
 			return
 		}
-		c.JSON(200, res)
+		c.JSON(200, gin.H{"data": res, "message": "User Registered Successfully"})
 	}
 }
 
@@ -28,11 +28,11 @@ func LoginUserController() gin.HandlerFunc {
 		res, err := userservices.UserLoginService(usermiddleware.User.Email, usermiddleware.User.Password)
 		if err != nil {
 			c.JSON(400, gin.H{
-				"error": err.Error(),
+				"message": "Error on Service" + err.Error(),
 			})
 			return
 		}
-		c.JSON(200, res)
+		c.JSON(200, gin.H{"data": res, "message": "Logged In Successfully"})
 	}
 
 }
@@ -51,7 +51,7 @@ func UpdateUserController() gin.HandlerFunc {
 		userIDUint, err := strconv.ParseUint(userId, 10, 64)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Invalid user ID",
+				"message": "Invalid user ID",
 			})
 			return
 		}
@@ -72,7 +72,7 @@ func UpdateUserController() gin.HandlerFunc {
 		res, err := userservices.UpdateUserService(uint(userIDUint), user)
 		if err != nil {
 			ctx.JSON(400, gin.H{
-				"error": err.Error(),
+				"message": "Error on Service" + err.Error(),
 			})
 			return
 		}
@@ -87,7 +87,7 @@ func DeleteUserController() gin.HandlerFunc {
 		userIDUint, err := strconv.ParseUint(userId, 10, 64)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid user ID",
+				"message": "Invalid user ID",
 			})
 			return
 		}
@@ -96,7 +96,7 @@ func DeleteUserController() gin.HandlerFunc {
 
 		if !ok {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "Error while getting user claims",
+				"message": "Error while getting user claims",
 			})
 			return
 		}
@@ -104,7 +104,7 @@ func DeleteUserController() gin.HandlerFunc {
 		err = userservices.DeleteUserService(uint(userIDUint))
 		if err != nil {
 			ctx.JSON(400, gin.H{
-				"error": "Error deleting user",
+				"message": "Error deleting user",
 			})
 			return
 		}
@@ -134,10 +134,11 @@ func GetUserHandler() gin.HandlerFunc {
 			})
 			return
 		}
-
+		user.Password = ""
+		user.ConfirmPassword = ""
 		ctx.JSON(200, gin.H{
 			"message": "Okay",
-			"user":    user,
+			"data":    user,
 		})
 	}
 }

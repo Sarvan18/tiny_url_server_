@@ -1,6 +1,7 @@
 package usermiddleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/mail"
@@ -20,48 +21,47 @@ func UserRegisterMiddleware() gin.HandlerFunc {
 		ctx.Header("Content-Type", "application/json")
 
 		if ctx.Request.Method != "POST" {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Method not allowed"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Method not allowed"})
 		}
 
 		defer ctx.Request.Body.Close()
 
 		if err := ctx.Request.ParseForm(); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse form", "message": err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse form" + err.Error()})
+			return
 		}
-		User = &models.User{
-			Name:            ctx.Request.FormValue("name"),
-			Email:           ctx.Request.FormValue("email"),
-			Gender:          ctx.Request.FormValue("gender"),
-			Password:        ctx.Request.FormValue("password"),
-			ConfirmPassword: ctx.Request.FormValue("confirmPassword"),
+		User = &models.User{}
+
+		if err := json.NewDecoder(ctx.Request.Body).Decode(&User); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body" + err.Error()})
+			return
 		}
 
 		if strings.TrimSpace(string(User.Name)) == "" || strings.TrimSpace(string(User.Email)) == "" || strings.TrimSpace(string(User.Password)) == "" || strings.TrimSpace(string(User.ConfirmPassword)) == "" {
-
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "All fields are required"})
 			return
 		}
 
 		_, err := mail.ParseAddress(User.Email)
 
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email format"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid email format"})
 			return
 		}
 
-		if strings.TrimSpace(string(User.Gender)) == "Male" || strings.TrimSpace(string(User.Gender)) == "Female" || strings.TrimSpace(string(User.Gender)) == "Other" {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gender"})
-		}
+		// if strings.TrimSpace(string(User.Gender)) == "Male" || strings.TrimSpace(string(User.Gender)) == "Female" || strings.TrimSpace(string(User.Gender)) == "Other" {
+		// 	ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Gender"})
+		// }
 
 		hasNum, hasUpper, hasSpecial := validatePassword(User.Password)
 
 		if len(User.Password) <= 6 || !hasNum || !hasUpper || !hasSpecial {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 8 characters long and include at least one number, one uppercase letter, and one special character"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Password must be at least 8 characters long and include at least one number, one uppercase letter, and one special character"})
 			return
 		}
 
 		if User.Password != User.ConfirmPassword {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Password and Confirm Password do not match"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Password and Confirm Password do not match"})
 			return
 		}
 
@@ -74,34 +74,33 @@ func UserLoginMiddleware() gin.HandlerFunc {
 		ctx.Header("Content-Type", "application/json")
 
 		if ctx.Request.Method != "POST" {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Method not allowed"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Method not allowed"})
 			return
 		}
 
 		defer ctx.Request.Body.Close()
 
 		if err := ctx.Request.ParseForm(); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse form", "message": err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to parse form" + err.Error()})
 			return
 		}
 
-		userEmail := ctx.Request.FormValue("email")
-		userPassword := ctx.Request.FormValue("password")
-		if strings.TrimSpace(string(userEmail)) == "" || strings.TrimSpace(string(userPassword)) == "" {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email and Password are required"})
+		User = &models.User{}
+
+		if err := json.NewDecoder(ctx.Request.Body).Decode(&User); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request body" + err.Error()})
+			return
+		}
+		if strings.TrimSpace(string(User.Email)) == "" || strings.TrimSpace(string(User.Password)) == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Email and Password are required"})
 			return
 		}
 
-		_, err := mail.ParseAddress(userEmail)
+		_, err := mail.ParseAddress(User.Email)
 
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email format"})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Invalid email format"})
 			return
-		}
-
-		User = &models.User{
-			Email:    userEmail,
-			Password: userPassword,
 		}
 
 		ctx.Next()

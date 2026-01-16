@@ -4,6 +4,8 @@ go 1.25.0
 
 require gorm.io/driver/postgres v1.6.0
 
+require github.com/gin-contrib/cors v1.7.6 // indirect
+
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
